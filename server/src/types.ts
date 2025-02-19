@@ -409,3 +409,8 @@ export interface IBulkAsset {
   addAssetIds: (id: string, assetIds: string[]) => Promise<void>;
   removeAssetIds: (id: string, assetIds: string[]) => Promise<void>;
 }
+
+export type SyncUpsertCheckpoint = {
+  epoch: string;
+  id: string;
+};

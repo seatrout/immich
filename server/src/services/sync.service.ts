@@ -1,18 +1,61 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { Insertable } from 'kysely';
 import { DateTime } from 'luxon';
+import { Writable } from 'node:stream';
 import { AUDIT_LOG_MAX_DURATION } from 'src/constants';
+import { SessionSyncCheckpoints } from 'src/db';
 import { AssetResponseDto, mapAsset } from 'src/dtos/asset-response.dto';
 import { AuthDto } from 'src/dtos/auth.dto';
-import { AssetDeltaSyncDto, AssetDeltaSyncResponseDto, AssetFullSyncDto } from 'src/dtos/sync.dto';
-import { DatabaseAction, EntityType, Permission } from 'src/enum';
+import { AssetDeltaSyncDto, AssetDeltaSyncResponseDto, AssetFullSyncDto, SyncStreamDto } from 'src/dtos/sync.dto';
+import { DatabaseAction, EntityType, Permission, SyncResponseType } from 'src/enum';
 import { BaseService } from 'src/services/base.service';
 import { getMyPartnerIds } from 'src/utils/asset.util';
 import { setIsEqual } from 'src/utils/set';
+import { fromAck, mapJsonLine } from 'src/utils/sync';
 
 const FULL_SYNC = { needsFullSync: true, deleted: [], upserted: [] };
 
 @Injectable()
 export class SyncService extends BaseService {
+  async acknowledge(auth: AuthDto, dtos: string[]) {
+    // TODO ack validation
+
+    const sessionId = auth.session?.id;
+    if (!sessionId) {
+      throw new BadRequestException('Not allowed');
+    }
+
+    const items: Insertable<SessionSyncCheckpoints>[] = [];
+    for (const dto of dtos) {
+      const { type, raw } = fromAck(dto);
+      items.push({ sessionId, type, ack: raw });
+    }
+
+    await this.syncRepository.upsertCheckpoints(items);
+  }
+
+  async stream(auth: AuthDto, response: Writable, dto: SyncStreamDto) {
+    let checkpoint;
+
+    for (const type of dto.types) {
+      switch (type) {
+        case SyncResponseType.UserV1: {
+          const stream = this.syncRepository.getUserUpserts(checkpoint);
+          for await (const { epoch, ...item } of stream) {
+            response.write(mapJsonLine({ type, ack: `${type}|${item.id}|${epoch}`, data: item }));
+          }
+        }
+
+        default: {
+          this.logger.warn(`Unsupported sync type: ${type}`);
+          break;
+        }
+      }
+    }
+
+    response.end();
+  }
+
   async getFullSync(auth: AuthDto, dto: AssetFullSyncDto): Promise<AssetResponseDto[]> {
     // mobile implementation is faster if this is a single id
     const userId = dto.userId || auth.user.id;

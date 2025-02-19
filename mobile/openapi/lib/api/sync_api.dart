@@ -112,4 +112,82 @@ class SyncApi {
     }
     return null;
   }
+
+  /// Performs an HTTP 'POST /sync/stream' operation and returns the [Response].
+  /// Parameters:
+  ///
+  /// * [SyncStreamDto] syncStreamDto (required):
+  Future<Response> getSyncStreamWithHttpInfo(SyncStreamDto syncStreamDto,) async {
+    // ignore: prefer_const_declarations
+    final path = r'/sync/stream';
+
+    // ignore: prefer_final_locals
+    Object? postBody = syncStreamDto;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>['application/json'];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Parameters:
+  ///
+  /// * [SyncStreamDto] syncStreamDto (required):
+  Future<void> getSyncStream(SyncStreamDto syncStreamDto,) async {
+    final response = await getSyncStreamWithHttpInfo(syncStreamDto,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+  }
+
+  /// Performs an HTTP 'POST /sync/acknowledge' operation and returns the [Response].
+  /// Parameters:
+  ///
+  /// * [List<String>] requestBody (required):
+  Future<Response> sendSyncAckWithHttpInfo(List<String> requestBody,) async {
+    // ignore: prefer_const_declarations
+    final path = r'/sync/acknowledge';
+
+    // ignore: prefer_final_locals
+    Object? postBody = requestBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>['application/json'];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Parameters:
+  ///
+  /// * [List<String>] requestBody (required):
+  Future<void> sendSyncAck(List<String> requestBody,) async {
+    final response = await sendSyncAckWithHttpInfo(requestBody,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+  }
 }

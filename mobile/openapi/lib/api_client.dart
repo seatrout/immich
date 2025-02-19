@@ -508,6 +508,10 @@ class ApiClient {
           return StackResponseDto.fromJson(value);
         case 'StackUpdateDto':
           return StackUpdateDto.fromJson(value);
+        case 'SyncStreamDto':
+          return SyncStreamDto.fromJson(value);
+        case 'SyncUserV1':
+          return SyncUserV1.fromJson(value);
         case 'SystemConfigBackupsDto':
           return SystemConfigBackupsDto.fromJson(value);
         case 'SystemConfigDto':

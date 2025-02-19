@@ -1,4 +1,7 @@
+import { SelectQueryBuilder, sql } from 'kysely';
+import { DB } from 'src/db';
 import { Permission } from 'src/enum';
+import { SyncUpsertCheckpoint } from 'src/types';
 
 export type AuthUser = {
   id: string;
@@ -29,6 +32,10 @@ export type AuthSession = {
 };
 
 export const columns = {
+  epoch: (columnName: 'createdAt' | 'updatedAt' | 'deletedAt') =>
+    sql.raw(`extract(epoch from "${columnName}")::text`).as('epoch'),
+  syncUser: ['users.id', 'users.name', 'users.email', 'users.deletedAt'],
+  syncUserDeletes: ['id', ''],
   authUser: [
     'users.id',
     'users.name',
@@ -51,3 +58,19 @@ export const columns = {
   userDto: ['id', 'name', 'email', 'profileImagePath', 'profileChangedAt'],
   apiKey: ['id', 'name', 'userId', 'createdAt', 'updatedAt', 'permissions'],
 } as const;
+
+export const whereCheckpoint = <T>(qb: SelectQueryBuilder<DB, 'users', T>, checkpoint?: SyncUpsertCheckpoint) => {
+  if (!checkpoint) {
+    return qb;
+  }
+
+  return qb.where((eb) =>
+    eb.or([
+      eb(eb.fn<Date>('to_timestamp', [sql.val(checkpoint.epoch)]), '<', eb.ref('updatedAt')),
+      eb.and([
+        eb(eb.fn<Date>('to_timestamp', [sql.val(checkpoint.epoch)]), '<=', eb.ref('updatedAt')),
+        eb('id', '>', checkpoint.id),
+      ]),
+    ]),
+  );
+};

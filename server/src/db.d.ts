@@ -294,6 +294,15 @@ export interface Sessions {
   userId: string;
 }
 
+export interface SessionSyncCheckpoints {
+  ack: string;
+  createdAt: Generated<Timestamp>;
+  sessionId: string;
+  type: string;
+  updatedAt: Generated<Timestamp>;
+}
+
+
 export interface SharedLinkAsset {
   assetsId: string;
   sharedLinksId: string;
@@ -429,6 +438,7 @@ export interface DB {
   partners: Partners;
   person: Person;
   sessions: Sessions;
+  session_sync_checkpoints: SessionSyncCheckpoints;
   shared_link__asset: SharedLinkAsset;
   shared_links: SharedLinks;
   smart_search: SmartSearch;
